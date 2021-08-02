@@ -8,10 +8,11 @@ import sys
 from pathlib import Path
 
 parser = argparse.ArgumentParser()
-parser.add_argument("state_path",
-                    help="state_path FQFN of the state file to use.",
+parser.add_argument('-s',
+                    dest='state_path',
+                    help="FQFN of the state file to use.",
                     default="versions_local_state.json")
-parser.add_argument('mod_id', help="mod_id Mod ID to check")
+parser.add_argument('mod_id', help="Mod ID to check")
 args = parser.parse_args()
 
 modId = args.mod_id

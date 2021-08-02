@@ -112,20 +112,19 @@ def send_mail(message_text, recipients):
 
 
 parser = argparse.ArgumentParser()
-parser.add_argument("db_path",
-                    help="db_path FQFN of the JSON DB file to use. Will be created if it does not exist.",
+parser.add_argument('-d',
+                    dest='db_path',
+                    help="FQFN of the JSON DB file to use. Will be created if it does not exist.",
                     default="versions_workshop.json")
-parser.add_argument("state_path",
-                    help="state_path FQFN of the state file to use. Will be created if it does not exist.",
+parser.add_argument('-s',
+                    dest='state_path',
+                    help="FQFN of the state file to use. Will be created if it does not exist.",
                     default="versions_local_state.json")
-parser.add_argument('mod_ids', nargs='*', help="mod_ids Mod IDs to check")
+parser.add_argument('mod_ids', nargs='+', help="Mod IDs to check")
 args = parser.parse_args()
 
 modIds = args.mod_ids
-modIdCount = len(modIds)
-if modIdCount <= 0:
-    raise ValueError('You need to specify at least one ID!')
-print('Welcome, we will try fetching update info for {} mods...'.format(modIdCount))
+print(f"Welcome, we will try fetching update info for {len(modIds)} mods...")
 
 
 # For debugging: a static list of IDs
