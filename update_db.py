@@ -1,6 +1,11 @@
 # This utility will fetch update times for a given set of mod IDs and store them in a JSON DB
+# Returns 0 for no updates, 1 for updates and > 1 for errors.
 import argparse
 import json
+import smtplib
+import ssl
+import sys
+from email.message import EmailMessage
 from pathlib import Path
 from urllib import request, parse
 
@@ -75,6 +80,37 @@ def update_db_and_return_updated(json_db_file, id_to_last_updated_timestamp_map)
     return result_set
 
 
+def send_mail(message_text, recipients):
+    hostname = 'smtp.zeusops.com'
+    port = 587  # For starttls
+    from secret import sender_mail
+    from secret import password
+
+    # Create a secure SSL context
+    context = ssl.create_default_context()
+
+    # Try to log in to server and send email
+    try:
+        server = smtplib.SMTP(hostname, port)
+        server.ehlo()  # Can be omitted
+        server.starttls(context=context)  # Secure the connection
+        server.ehlo()  # Can be omitted
+        server.login(sender_mail, password)
+        for recipient in recipients:
+            msg = EmailMessage()
+            msg.set_content(message_text)
+
+            msg['Subject'] = 'ZeusOps Mod Update Notification'
+            msg['From'] = sender_mail
+            msg['To'] = recipient
+            server.send_message(msg)
+    except Exception as e:
+        # Print any error messages to stdout
+        print(e)
+    finally:
+        server.quit()
+
+
 parser = argparse.ArgumentParser()
 parser.add_argument("db_path",
                     help="db_path FQFN of the JSON DB file to use. Will be created if it does not exist.",
@@ -95,17 +131,44 @@ print('Welcome, we will try fetching update info for {} mods...'.format(modIdCou
 # For debugging: a static list of IDs
 # modIds = {820924072, 1181881736}
 
-# 1. Get the update timestamps for each item
-idToLastUpdatedTimestampMap = fetch_workshop_pages(modIds)
+# For signaling that updating has failed
+hadUpdateError = True
 
-# 2. Check our DB to see if any have updated
-updatedModIds = update_db_and_return_updated(args.db_path, idToLastUpdatedTimestampMap)
-print('Found updates for {} mods.'.format(len(updatedModIds)))
+try:
+    # 1. Get the update timestamps for each item
+    idToLastUpdatedTimestampMap = fetch_workshop_pages(modIds)
 
-# 3. Write the IDs of updated mods to the state file.
-jsonState = dict({'state': list(updatedModIds)})
-stateFile = Path(args.state_path)
-json.dump(jsonState, stateFile.open('w', encoding='utf-8'))
-for updatedModId in updatedModIds:
-    print('Updated: {}'.format(updatedModId))
+    # 2. Check our DB to see if any have updated
+    updatedModIds = update_db_and_return_updated(args.db_path, idToLastUpdatedTimestampMap)
+    updatedModCount = len(updatedModIds)
+    print('Found updates for {} mods.'.format(updatedModCount))
+
+    # 3. Write the IDs of updated mods to the state file.
+    jsonState = dict({'state': list(updatedModIds)})
+    stateFile = Path(args.state_path)
+    json.dump(jsonState, stateFile.open('w', encoding='utf-8'))
+    for updatedModId in updatedModIds:
+        print('Updated: {}'.format(updatedModId))
+    hadUpdateError = False
+except ValueError as err:
+    print('An internal error occurred: {}'.format(err))
+    sys.exit(3)
+except:
+    print('An unexpected internal error occurred, update failed.')
+    sys.exit(4)
+
+# 4. Send a mail to peeps
+if updatedModCount > 0:
+    from secret import mail_recipient
+    messageText = """\
+Yo, at least {0} mod{1} updated!
+
+ID{1}: {2}
+
+Cheers,
+    UpdateBot.
+    """.format(updatedModCount, 's' if updatedModCount != 1 else '', ', '.join(updatedModIds))
+    send_mail(messageText, mail_recipient)
+
 print('Bye!')
+sys.exit(0 if updatedModCount == 0 else 1)
