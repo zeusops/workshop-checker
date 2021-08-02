@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 # This utility will fetch update times for a given set of mod IDs and store
 # them in a JSON DB
 

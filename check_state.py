@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 # This utility will check a given mod ID against a local state file to determine whether it needs updating.
 # The state file does _not_ contain the actual state as is on disk, but whether the mod was marked as 'updated'
 # during the last Workshop crawl/DB update.
