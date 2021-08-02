@@ -5,7 +5,6 @@
 import argparse
 import json
 import sys
-from pathlib import Path
 
 parser = argparse.ArgumentParser()
 parser.add_argument('-s',
@@ -21,10 +20,12 @@ modId = args.mod_id
 # modId = '820924072'
 
 # 1. Read the state file
-stateFile = Path(args.state_path)
-if not stateFile.is_file():
-    raise ValueError('Could not find state file "{}", does it exist and is readable?'.format(args.state_path))
-jsonState = json.load(stateFile.open('r', encoding='utf-8'))
+try:
+    with open(args.state_path) as f:
+        jsonState = json.load(f)
+except FileNotFoundError as e:
+    raise FileNotFoundError(f'Could not find state file "{args.state_path}", '
+                            'does it exist and is readable?') from e
 
 # 2. Check if the ID is contained in the state, i.e. was marked as updated
 if modId in jsonState['state']:

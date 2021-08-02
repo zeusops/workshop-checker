@@ -47,10 +47,10 @@ def fetch_workshop_pages(itemIds):
 def update_db_and_return_updated(json_db_file, id_to_last_updated_timestamp_map):
     file = Path(json_db_file)
     json_db = json.loads('{ "mods": {} }')
-    if file.is_file():
-        # Load the old JSON
-        json_db = json.load(file.open('r', encoding='utf-8'))
-    else:
+    try:
+        with open(json_db_file) as f:
+            json_db = json.load(f)
+    except FileNotFoundError:
         print('Warning: The specified JSON DB file "{}" does not exist, will create an empty, fresh one!'
               .format(json_db_file))
 
