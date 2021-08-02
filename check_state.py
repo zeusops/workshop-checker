@@ -28,7 +28,7 @@ jsonState = json.load(stateFile.open('r', encoding='utf-8'))
 
 # 2. Check if the ID is contained in the state, i.e. was marked as updated
 if modId in jsonState['state']:
-    print('UPDATED')
+    print('NEEDS UPDATE')
     sys.exit(1)
 else:
     print('UNCHANGED')
