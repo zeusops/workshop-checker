@@ -167,7 +167,8 @@ ID{1}: {2}
 Cheers,
     UpdateBot.
     """.format(updatedModCount, 's' if updatedModCount != 1 else '', ', '.join(updatedModIds))
-    send_mail(messageText, mail_recipient)
+    # send_mail(messageText, mail_recipient)
+    print(messageText)
 
 print('Bye!')
 sys.exit(0 if updatedModCount == 0 else 1)
