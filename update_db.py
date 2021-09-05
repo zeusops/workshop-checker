@@ -38,6 +38,8 @@ def fetch_workshop_pages(itemIds: List[str]) -> Dict[str, int]:
     # print(json.dumps(json_data, sort_keys=True, indent=4))
     result_count = json_data['response']['resultcount']
     if result_count != len(itemIds):
+        # See https://partner.steamgames.com/doc/api/steam_api#EResult for
+        # explanations of result codes
         raise ValueError(f"The API returned {result_count} results, but we "
                          f"expected {len(itemIds)}!")
     result = json_data['response']['result']
@@ -50,6 +52,10 @@ def fetch_workshop_pages(itemIds: List[str]) -> Dict[str, int]:
     update_times = {}
     for result in json_data['response']['publishedfiledetails']:
         published_file_id = result['publishedfileid']
+        if result['result'] != 1:
+            raise ValueError(f"The API returned result "
+                             f"\"{result['result']}\" for the item "
+                             f"{published_file_id}, but we expected \"1\"!")
         if published_file_id not in itemIds:
             raise ValueError(f"The API returned a result for an item with "
                              f"ID \"{published_file_id}\", but we were not "
