@@ -21,6 +21,9 @@ parser.add_argument('-s',
                     dest='state_path',
                     help="FQFN of the state file to use.",
                     default="versions_local_state.json")
+parser.add_argument('-e', dest='only_existing', default=False,
+                    action='store_true', help="Only update existing mods, "
+                    "do not download new ones.")
 parser.add_argument('mod_id', help="Mod ID to check")
 args = parser.parse_args()
 
@@ -47,7 +50,7 @@ except KeyError:
     sys.exit(0)
 
 # 2. Check if the mod needs an update
-if check_mod_update(mod_id, workshop_time, local_mods):
+if check_mod_update(mod_id, workshop_time, local_mods, not args.only_existing):
     print('NEEDS UPDATE')
     sys.exit(1)
 else:
