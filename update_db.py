@@ -86,13 +86,14 @@ def get_local_state(ws_path: Union[Path, str]) -> Dict[str, int]:
 
 
 def check_mod_update(mod_id: str, workshop_timestamp: int,
-                     local_mods: Dict[str, int]) -> bool:
+                     local_mods: Dict[str, int], download_new=True) -> bool:
     try:
         local_timestamp = local_mods[mod_id]
     except KeyError:
-        print(f"Mod {mod_id} was not found locally, assuming that "
-              "it needs an update.")
-        return True
+        if download_new:
+            print(f"Mod {mod_id} was not found locally, assuming that "
+                  "it needs an update.")
+            return True
     else:
         if local_timestamp < workshop_timestamp:
             return True
@@ -154,6 +155,9 @@ def main():
                         help="Send mail to admins about mod updates")
     parser.add_argument('-c', dest='check_updates', default=False,
                         action='store_true', help="Check for mod updates")
+    parser.add_argument('-e', dest='only_existing', default=False,
+                        action='store_true', help="Only update existing mods, "
+                        "do not download new ones.")
     parser.add_argument('mod_ids', nargs='+', help="Mod IDs to check")
     args = parser.parse_args()
 
@@ -166,7 +170,7 @@ def main():
 
     try:
         # 1. Get the update timestamps for each item
-        mods_info = fetch_workshop_pages(modIds)
+        mods_info = fetch_workshop_pages(modIds, args.only_existing)
     except ValueError:
         traceback.print_exc()
         print("An internal error occurred")
