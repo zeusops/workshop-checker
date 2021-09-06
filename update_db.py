@@ -95,6 +95,9 @@ def check_mod_update(mod_id: str, workshop_timestamp: int,
             print(f"Mod {mod_id} was not found locally, assuming that "
                   "it needs an update.")
             return True
+        else:
+            print(f"Mod {mod_id} was not found locally, skipping")
+            return False
     else:
         if local_timestamp < workshop_timestamp:
             return True
