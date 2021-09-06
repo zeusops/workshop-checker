@@ -71,8 +71,9 @@ def fetch_workshop_pages(itemIds: List[str]) -> Dict[str, Dict[str, Any]]:
         }
     return mod_info
 
+
 def get_local_state(ws_path: Union[Path, str]) -> Dict[str, int]:
-    workshop = Path(os.path.expanduser(ws_path)) 
+    workshop = Path(os.path.expanduser(ws_path))
     workshop_path = (workshop / 'steamapps/workshop' / FILENAME)
 
     with open(workshop_path) as f:
@@ -82,6 +83,7 @@ def get_local_state(ws_path: Union[Path, str]) -> Dict[str, int]:
     for mod in data:
         local_mods[mod] = int(data[mod]['timeupdated'])
     return local_mods
+
 
 def check_mod_update(mod_id: str, workshop_timestamp: int,
                      local_mods: Dict[str, int]) -> bool:
@@ -165,7 +167,7 @@ def main():
     try:
         # 1. Get the update timestamps for each item
         mods_info = fetch_workshop_pages(modIds)
-    except ValueError as e:
+    except ValueError:
         traceback.print_exc()
         print("An internal error occurred")
         sys.exit(3)

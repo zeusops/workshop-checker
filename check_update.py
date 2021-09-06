@@ -1,20 +1,16 @@
 #!/usr/bin/env python3
 
-# This utility will check a given mod ID against a local state file to determine whether it needs updating.
-# The state file does _not_ contain the actual state as is on disk, but whether the mod was marked as 'updated'
+# This utility will check a given mod ID against a local state file to
+# determine whether it needs updating. The state file does _not_ contain the
+# actual state as is on disk, but whether the mod was marked as 'updated'
 # during the last Workshop crawl/DB update.
 
 import argparse
 import json
-import os
-from pathlib import Path
 import sys
 
-from steamfiles import acf
-
-from config import WORKSHOP_PATH, FILENAME
-from update_db import get_local_state, check_mod_update
-
+from config import FILENAME, WORKSHOP_PATH
+from update_db import check_mod_update, get_local_state
 
 parser = argparse.ArgumentParser()
 parser.add_argument('-w', dest='workshop_path', default=WORKSHOP_PATH,
