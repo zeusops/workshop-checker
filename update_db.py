@@ -100,12 +100,14 @@ def check_mod_update(mod_id: str, workshop_timestamp: int,
     return False
 
 
-def check_updates(ws_path: str, mods_info: Dict[str, Dict[str, Any]]):
+def check_updates(ws_path: str, mods_info: Dict[str, Dict[str, Any]],
+                  download_new=True) -> List[str]:
     results = []
     local_mods = get_local_state(ws_path)
 
     for item_id, mod_info in mods_info.items():
-        if check_mod_update(item_id, mod_info['timestamp'], local_mods):
+        if check_mod_update(item_id, mod_info['timestamp'], local_mods,
+                            download_new):
             results.append(item_id)
     return results
 
@@ -170,7 +172,7 @@ def main():
 
     try:
         # 1. Get the update timestamps for each item
-        mods_info = fetch_workshop_pages(modIds, args.only_existing)
+        mods_info = fetch_workshop_pages(modIds)
     except ValueError:
         traceback.print_exc()
         print("An internal error occurred")
@@ -182,7 +184,8 @@ def main():
 
     if args.check_updates:
         # 2. Check our DB to see if any have updated
-        updated_mod_ids = check_updates(args.workshop_path, mods_info)
+        updated_mod_ids = check_updates(args.workshop_path, mods_info,
+                                        args.only_existing)
         updated_mod_count = len(updated_mod_ids)
         print('Found updates for {} mods.'.format(updated_mod_count))
 
