@@ -40,7 +40,11 @@ except FileNotFoundError as e:
 
 local_mods = get_local_state(args.workshop_path)
 mod_id = args.mod_id
-workshop_time = workshop_state[mod_id]['timestamp']
+try:
+    workshop_time = workshop_state[mod_id]['timestamp']
+except KeyError:
+    print(f"Could not find mod \"{mod_id}\" in the state file.")
+    sys.exit(0)
 
 # 2. Check if the mod needs an update
 if check_mod_update(mod_id, workshop_time, local_mods):
