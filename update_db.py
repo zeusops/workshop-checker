@@ -7,17 +7,22 @@
 
 import argparse
 import json
+import os
+from pathlib import Path
 import smtplib
 import ssl
 import sys
-import textwrap
 import traceback
 from email.message import EmailMessage
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Union
 from urllib import parse, request
 
+from steamfiles import acf
 
-def fetch_workshop_pages(itemIds: List[str]) -> Dict[str, int]:
+from config import WORKSHOP_PATH, FILENAME
+
+
+def fetch_workshop_pages(itemIds: List[str]) -> Dict[str, Dict[str, Any]]:
     url = ('https://api.steampowered.com/ISteamRemoteStorage/'
            'GetPublishedFileDetails/v1/?format=json')
     raw_data: Dict[str, Any] = {
@@ -49,54 +54,56 @@ def fetch_workshop_pages(itemIds: List[str]) -> Dict[str, int]:
 
     # Okay, so we got all the info, we want to return a dict mapping id to last
     # update timestamp
-    update_times = {}
+    mod_info = {}
     for result in json_data['response']['publishedfiledetails']:
-        published_file_id = result['publishedfileid']
+        mod_id = result['publishedfileid']
         if result['result'] != 1:
             raise ValueError(f"The API returned result "
                              f"\"{result['result']}\" for the item "
-                             f"{published_file_id}, but we expected \"1\"!")
-        if published_file_id not in itemIds:
+                             f"{mod_id}, but we expected \"1\"!")
+        if mod_id not in itemIds:
             raise ValueError(f"The API returned a result for an item with "
-                             f"ID \"{published_file_id}\", but we were not "
+                             f"ID \"{mod_id}\", but we were not "
                              "expecting that!")
-        update_times[published_file_id] = result['time_updated']
-    return update_times
+        mod_info[mod_id] = {
+            'name': result['title'],
+            'timestamp': result['time_updated']
+        }
+    return mod_info
 
+def get_local_state(ws_path: Union[Path, str]) -> Dict[str, int]:
+    workshop = Path(os.path.expanduser(ws_path)) 
+    workshop_path = (workshop / 'steamapps/workshop' / FILENAME)
 
-def update_and_check_db(db_path: str, update_times: Dict[str, int]):
+    with open(workshop_path) as f:
+        data = acf.load(f)['AppWorkshop']['WorkshopItemsInstalled']
+    local_mods = {}
+
+    for mod in data:
+        local_mods[mod] = int(data[mod]['timeupdated'])
+    return local_mods
+
+def check_mod_update(mod_id: str, workshop_timestamp: int,
+                     local_mods: Dict[str, int]) -> bool:
     try:
-        with open(db_path) as f:
-            json_db = json.load(f)
-    except FileNotFoundError:
-        print(f"Warning: The specified JSON DB file \"{db_path}\" does not "
-              "exist, will create an empty, fresh one!")
-        json_db = {"mods": {}}
+        local_timestamp = local_mods[mod_id]
+    except KeyError:
+        print(f"Mod {mod_id} was not found locally, assuming that "
+              "it needs an update.")
+        return True
+    else:
+        if local_timestamp < workshop_timestamp:
+            return True
+    return False
 
+
+def check_updates(ws_path: str, mods_info: Dict[str, Dict[str, Any]]):
     results = []
-    had_updates = False
-    json_mods = json_db['mods']
+    local_mods = get_local_state(ws_path)
 
-    for itemId, current_timestamp in update_times.items():
-        last_timestamp = -1
-        item_id_str = str(itemId)
-        if item_id_str in json_mods:
-            last_timestamp = json_mods[item_id_str]
-        else:
-            print(f"Mod {itemId} was not present in DB, adding and assuming "
-                  "updated state.")
-
-        if last_timestamp != current_timestamp:
-            print(f"Detected update for mod {itemId}.")
-            results.append(itemId)
-            json_mods[item_id_str] = current_timestamp
-            had_updates = True
-
-    if had_updates:
-        json_db = {'mods': json_mods}
-        with open(db_path, 'w') as f:
-            json.dump(json_db, f, indent=2)
-
+    for item_id, mod_info in mods_info.items():
+        if check_mod_update(item_id, mod_info['timestamp'], local_mods):
+            results.append(item_id)
     return results
 
 
@@ -119,7 +126,7 @@ def send_mail(message_text: str, recipients: list):
             msg = EmailMessage()
             msg.set_content(message_text)
 
-            msg['Subject'] = 'ZeusOps Mod Update Notification'
+            msg['Subject'] = "ZeusOps Pending Mod Updates"
             msg['From'] = sender_mail
             msg['To'] = recipient
             server.send_message(msg)
@@ -129,10 +136,10 @@ def send_mail(message_text: str, recipients: list):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('-d', dest='db_path',
-                        help="Filename of the JSON DB file to use. Will be "
-                             "created if does not exist.",
-                        default="versions_workshop.json")
+    parser.add_argument('-w', dest='workshop_path', default=WORKSHOP_PATH,
+                        help="Root directory of the steam workshop")
+    parser.add_argument('-f', dest='workshop_file', default=FILENAME,
+                        help="Filename of the workshop ACF file")
     parser.add_argument('-s', dest='state_path',
                         help="Filename of the state file to use. Will be "
                              "created if does not exist.",
@@ -140,58 +147,66 @@ def main():
     parser.add_argument('-m', dest='send_mail', default=False,
                         action='store_true',
                         help="Send mail to admins about mod updates")
+    parser.add_argument('-c', dest='check_updates', default=False,
+                        action='store_true', help="Check for mod updates")
     parser.add_argument('mod_ids', nargs='+', help="Mod IDs to check")
     args = parser.parse_args()
 
     modIds = args.mod_ids
-    print(f"Welcome, we will try fetching update info for {len(modIds)} "
-          "mods...")
+    print(f"Welcome, we will try to fetch update info for {len(modIds)} "
+          "mods")
 
     # For debugging: a static list of IDs
     # modIds = {"820924072", "1181881736"}
 
     try:
         # 1. Get the update timestamps for each item
-        update_times = fetch_workshop_pages(modIds)
-
-        # 2. Check our DB to see if any have updated
-        updatedModIds = update_and_check_db(args.db_path, update_times)
-        updatedModCount = len(updatedModIds)
-        print('Found updates for {} mods.'.format(updatedModCount))
-
-        # 3. Write the IDs of updated mods to the state file.
-        jsonState = dict({'state': list(updatedModIds)})
-        with open(args.state_path, 'w') as f:
-            json.dump(jsonState, f, indent=2)
-        for updatedModId in updatedModIds:
-            print('Updated: {}'.format(updatedModId))
+        mods_info = fetch_workshop_pages(modIds)
     except ValueError as e:
         traceback.print_exc()
         print("An internal error occurred")
         sys.exit(3)
-    except Exception as e:
-        traceback.print_exc()
-        print('An unexpected internal error occurred, update failed.')
-        sys.exit(4)
 
-    # 4. Send a mail to peeps
-    if updatedModCount > 0:
-        if args.send_mail:
-            messageText = textwrap.dedent("""\
-                Yo, at least {0} mod{1} updated!
+    with open(args.state_path, 'w') as f:
+        json.dump(mods_info, f, indent=2)
+    print("Update info fetched")
 
-                ID{1}: {2}
+    if args.check_updates:
+        # 2. Check our DB to see if any have updated
+        updated_mod_ids = check_updates(args.workshop_path, mods_info)
+        updated_mod_count = len(updated_mod_ids)
+        print('Found updates for {} mods.'.format(updated_mod_count))
 
-                Cheers,
-                    UpdateBot.
-                """.format(updatedModCount,
-                        's' if updatedModCount != 1 else '',
-                        ', '.join(updatedModIds)))
+        # 3. Write the IDs of updated mods to the state file.
+        mods_combined = []
+        for mod_id in updated_mod_ids:
+            mod_name = mods_info[mod_id]['name']
+            combined = f"{mod_id} - {mod_name}"
+            print(f"Has update: {combined}")
+            mods_combined.append(combined)
+
+        # 4. Send a mail to peeps
+        if updated_mod_count > 0 and args.send_mail:
+            message_text = (
+                "Yo, at least {0} mod{1} need{2} an update!\n"
+                "\n"
+                "ID{1}:\n"
+                "  {3}\n"
+                "\n"
+                "Cheers,\n"
+                "    UpdateBot.\n"
+                .format(updated_mod_count,
+                        's' if updated_mod_count != 1 else '',
+                        's' if updated_mod_count == 1 else '',
+                        '\n  '.join(mods_combined)))
             from secret import mail_recipient
-            send_mail(messageText, mail_recipient)
+            send_mail(message_text, mail_recipient)
 
-    print('Bye!')
-    sys.exit(0 if updatedModCount == 0 else 1)
+        print("Bye!")
+        sys.exit(0 if updated_mod_count == 0 else 1)
+    else:
+        print("Not checking for updates")
+        sys.exit()
 
 
 if __name__ == '__main__':
