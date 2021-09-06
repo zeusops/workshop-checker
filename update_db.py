@@ -107,7 +107,8 @@ def check_updates(ws_path: str, mods_info: Dict[str, Dict[str, Any]]):
     return results
 
 
-def send_mail(message_text: str, recipients: list):
+def send_mail(message_text: str, recipients: list,
+              subject="ZeusOps Pending Mod Updates"):
     hostname = 'smtp.zeusops.com'
     port = 587  # For starttls
     from secret import password, sender_mail
@@ -122,14 +123,16 @@ def send_mail(message_text: str, recipients: list):
         server.starttls(context=context)  # Secure the connection
         server.ehlo()  # Can be omitted
         server.login(sender_mail, password)
-        for recipient in recipients:
-            msg = EmailMessage()
-            msg.set_content(message_text)
+        # for recipient in recipients:
+        msg = EmailMessage()
+        msg.set_content(message_text)
 
-            msg['Subject'] = "ZeusOps Pending Mod Updates"
-            msg['From'] = sender_mail
-            msg['To'] = recipient
-            server.send_message(msg)
+        msg['Subject'] = subject
+        msg['From'] = sender_mail
+        msg['To'] = (', '.join(recipients)
+                     if len(recipients) > 1
+                     else recipients[0])
+        server.send_message(msg)
     finally:
         server.quit()
 
