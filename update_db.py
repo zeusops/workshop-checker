@@ -58,9 +58,10 @@ def fetch_workshop_pages(itemIds: List[str]) -> Dict[str, Dict[str, Any]]:
     for result in json_data['response']['publishedfiledetails']:
         mod_id = result['publishedfileid']
         if result['result'] != 1:
-            raise ValueError(f"The API returned result "
-                             f"\"{result['result']}\" for the item "
-                             f"{mod_id}, but we expected \"1\"!")
+            print(f"The API returned result "
+                  f"\"{result['result']}\" for the item "
+                  f"{mod_id}, but we expected \"1\"!")
+            continue
         if mod_id not in itemIds:
             raise ValueError(f"The API returned a result for an item with "
                              f"ID \"{mod_id}\", but we were not "
