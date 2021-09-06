@@ -186,7 +186,7 @@ def main():
     if args.check_updates:
         # 2. Check our DB to see if any have updated
         updated_mod_ids = check_updates(args.workshop_path, mods_info,
-                                        args.only_existing)
+                                        not args.only_existing)
         updated_mod_count = len(updated_mod_ids)
         print('Found updates for {} mods.'.format(updated_mod_count))
 
