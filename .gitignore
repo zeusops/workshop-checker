@@ -1,4 +1,4 @@
 secret.py
 venv
-*.json
+versions_*.json
 __pycache__
