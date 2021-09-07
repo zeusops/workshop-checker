@@ -203,20 +203,32 @@ def main():
 
         # 4. Send a mail to peeps
         if updated_mod_count > 0 and args.send_mail:
-            message_text = (
-                "Yo, at least {0} mod{1} need{2} an update!\n"
-                "\n"
-                "ID{1}:\n"
-                "  {3}\n"
-                "\n"
-                "Cheers,\n"
-                "    UpdateBot.\n"
-                .format(updated_mod_count,
-                        's' if updated_mod_count != 1 else '',
-                        's' if updated_mod_count == 1 else '',
-                        '\n  '.join(mods_combined)))
-            from secret import mail_recipient
-            send_mail(message_text, mail_recipient)
+            try:
+                with open('last_mail.json') as f:
+                    last_mailed: List[str] = json.load(f)
+            except FileNotFoundError:
+                last_mailed = {}
+
+            # Check if a mail has already been sent about the same mod IDs
+            needs_mail = any(elem not in last_mailed
+                             for elem in updated_mod_ids)
+            if needs_mail:
+                message_text = (
+                    "Yo, at least {0} mod{1} need{2} an update!\n"
+                    "\n"
+                    "ID{1}:\n"
+                    "  {3}\n"
+                    "\n"
+                    "Cheers,\n"
+                    "    UpdateBot.\n"
+                    .format(updated_mod_count,
+                            's' if updated_mod_count != 1 else '',
+                            's' if updated_mod_count == 1 else '',
+                            '\n  '.join(mods_combined)))
+                from secret import mail_recipient
+                send_mail(message_text, mail_recipient)
+                with open('last_mail.json', 'w') as f:
+                    json.dump(updated_mod_ids, f, indent=2)
 
         print("Bye!")
         sys.exit(0 if updated_mod_count == 0 else 1)
