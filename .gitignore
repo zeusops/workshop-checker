@@ -2,3 +2,4 @@ secret.py
 venv
 versions_*.json
 __pycache__
+last_mail.json
