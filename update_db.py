@@ -117,7 +117,7 @@ def check_updates(ws_path: str, mods_info: Dict[str, Dict[str, Any]],
 
 
 def send_mail(message_text: str, recipients: list,
-              subject="ZeusOps Pending Mod Updates"):
+              subject="Zeusops Pending Mod Updates"):
     hostname = 'smtp.zeusops.com'
     port = 587  # For starttls
     from secret import password, sender_mail
