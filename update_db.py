@@ -182,9 +182,11 @@ def main():
         print("An internal error occurred")
         sys.exit(3)
 
-    with open(args.state_path, 'w') as f:
-        json.dump(mods_info, f, indent=2)
+    with open(args.state_path, 'r') as f:
+        data = json.load(f)
     print("Update info fetched")
+
+    last_mailed: List[str] = data.get("last_mailed", {})
 
     if args.check_updates:
         # 2. Check our DB to see if any have updated
@@ -203,12 +205,6 @@ def main():
 
         # 4. Send a mail to peeps
         if updated_mod_count > 0 and args.send_mail:
-            try:
-                with open('last_mail.json') as f:
-                    last_mailed: List[str] = json.load(f)
-            except FileNotFoundError:
-                last_mailed = {}
-
             # Check if a mail has already been sent about the same mod IDs
             needs_mail = any(elem not in last_mailed
                              for elem in updated_mod_ids)
@@ -227,14 +223,22 @@ def main():
                             '\n  '.join(mods_combined)))
                 from secret import mail_recipient
                 send_mail(message_text, mail_recipient)
-                with open('last_mail.json', 'w') as f:
-                    json.dump(updated_mod_ids, f, indent=2)
+                last_mailed = updated_mod_ids
 
         print("Bye!")
-        sys.exit(0 if updated_mod_count == 0 else 1)
+        exit_code = 0 if updated_mod_count == 0 else 1
     else:
         print("Not checking for updates")
-        sys.exit()
+        exit_code = 0
+
+    with open(args.state_path, 'w') as f:
+        data_out = {
+            "mods_info": mods_info,
+            "last_mailed": last_mailed,
+        }
+        json.dump(data_out, f, indent=2)
+
+    sys.exit(exit_code)
 
 
 if __name__ == '__main__':

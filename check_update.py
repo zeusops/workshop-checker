@@ -35,7 +35,7 @@ modId = args.mod_id
 # 1. Read the state file
 try:
     with open(args.state_path) as f:
-        workshop_state = json.load(f)
+        workshop_state = json.load(f).get('mods_info', {})
 except FileNotFoundError as e:
     raise FileNotFoundError(f"Could not find the state file "
                             f"\"{args.state_path}\". Make sure that it "
