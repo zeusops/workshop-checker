@@ -7,6 +7,7 @@
 
 import argparse
 import json
+import logging
 import os
 from pathlib import Path
 import smtplib
@@ -21,6 +22,9 @@ from steamfiles import acf
 
 from config import WORKSHOP_PATH, FILENAME
 
+FORMAT = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+logging.basicConfig(format=FORMAT, level=logging.INFO)
+logger = logging.getLogger('update_db')
 
 def fetch_workshop_pages(itemIds: List[str]) -> Dict[str, Dict[str, Any]]:
     url = ('https://api.steampowered.com/ISteamRemoteStorage/'
@@ -58,9 +62,10 @@ def fetch_workshop_pages(itemIds: List[str]) -> Dict[str, Dict[str, Any]]:
     for result in json_data['response']['publishedfiledetails']:
         mod_id = result['publishedfileid']
         if result['result'] != 1:
-            print(f"The API returned result "
-                  f"\"{result['result']}\" for the item "
-                  f"{mod_id}, but we expected \"1\"!")
+            logger.warning(
+                f"The API returned result "
+                f"\"{result['result']}\" for the item "
+                f"{mod_id}, but we expected \"1\"!")
             continue
         if mod_id not in itemIds:
             raise ValueError(f"The API returned a result for an item with "
@@ -92,13 +97,16 @@ def check_mod_update(mod_id: str, workshop_timestamp: int,
         local_timestamp = local_mods[mod_id]
     except KeyError:
         if download_new:
-            print(f"Mod {mod_id} was not found locally, assuming that "
-                  "it needs an update.")
+            logger.info(
+                f"Mod {mod_id} was not found locally, assuming that "
+                 "it needs an update.")
             return True
         else:
-            print(f"Mod {mod_id} was not found locally, skipping")
+            logger.info(f"Mod {mod_id} was not found locally, skipping")
             return False
     else:
+        logger.debug(f"ID: {mod_id}, local: {local_timestamp}, "
+                     f"workshop: {workshop_timestamp}")
         if local_timestamp < workshop_timestamp:
             return True
     return False
@@ -164,12 +172,17 @@ def main():
     parser.add_argument('-e', dest='only_existing', default=False,
                         action='store_true', help="Only update existing mods, "
                         "do not download new ones.")
+    parser.add_argument('-v', dest='verbose', default=False,
+                        action='store_true', help="Enable verbose output")
     parser.add_argument('mod_ids', nargs='+', help="Mod IDs to check")
     args = parser.parse_args()
 
     modIds = args.mod_ids
-    print(f"Welcome, we will try to fetch update info for {len(modIds)} "
-          "mods")
+    logger.info(
+        f"Welcome, we will try to fetch update info for {len(modIds)} mods")
+
+    if args.verbose:
+        logger.setLevel(logging.DEBUG)
 
     # For debugging: a static list of IDs
     # modIds = {"820924072", "1181881736"}
@@ -179,12 +192,15 @@ def main():
         mods_info = fetch_workshop_pages(modIds)
     except ValueError:
         traceback.print_exc()
-        print("An internal error occurred")
+        logger.warning("An internal error occurred")
         sys.exit(3)
 
-    with open(args.state_path, 'r') as f:
-        data = json.load(f)
-    print("Update info fetched")
+    try:
+        with open(args.state_path, 'r') as f:
+            data = json.load(f)
+    except FileNotFoundError:
+        data = {}
+    logger.info("Update info fetched")
 
     last_mailed: List[str] = data.get("last_mailed", {})
 
@@ -193,14 +209,14 @@ def main():
         updated_mod_ids = check_updates(args.workshop_path, mods_info,
                                         not args.only_existing)
         updated_mod_count = len(updated_mod_ids)
-        print('Found updates for {} mods.'.format(updated_mod_count))
+        logger.info('Found updates for {} mods.'.format(updated_mod_count))
 
         # 3. Write the IDs of updated mods to the state file.
         mods_combined = []
         for mod_id in updated_mod_ids:
             mod_name = mods_info[mod_id]['name']
             combined = f"{mod_id} - {mod_name}"
-            print(f"Has update: {combined}")
+            logger.info(f"Has update: {combined}")
             mods_combined.append(combined)
 
         # 4. Send a mail to peeps
@@ -225,10 +241,10 @@ def main():
                 send_mail(message_text, mail_recipient)
                 last_mailed = updated_mod_ids
 
-        print("Bye!")
+        logger.info("Bye!")
         exit_code = 0 if updated_mod_count == 0 else 1
     else:
-        print("Not checking for updates")
+        logger.info("Not checking for updates")
         exit_code = 0
 
     with open(args.state_path, 'w') as f:
