@@ -1,3 +1,4 @@
 # Using a patched version of steamfiles because the upstream version doesn't
 # work with a modern pip.
 git+https://github.com/WinterPhoenix/steamfiles@patch-1#egg=steamfiles
+discord-webhook

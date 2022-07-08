@@ -239,6 +239,13 @@ def main():
                             '\n  '.join(mods_combined)))
                 from secret import mail_recipient
                 send_mail(message_text, mail_recipient)
+                from secret import webhook_url
+                from discord_webhook import DiscordWebhook
+
+                webhook = DiscordWebhook(url=webhook_url,
+                                         content=message_text)
+                response = webhook.execute()
+
                 last_mailed = updated_mod_ids
 
         logger.info("Bye!")
