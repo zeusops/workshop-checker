@@ -105,9 +105,9 @@ def check_mod_update(mod_id: str, workshop_timestamp: int,
             logger.info(f"Mod {mod_id} was not found locally, skipping")
             return False
     else:
-        logger.debug(f"ID: {mod_id}, local: {local_timestamp}, "
-                     f"workshop: {workshop_timestamp}")
         if local_timestamp < workshop_timestamp:
+            logger.debug(f"ID: {mod_id}, local: {local_timestamp}, "
+                         f"workshop: {workshop_timestamp}")
             return True
     return False
 
