@@ -26,6 +26,7 @@ FORMAT = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 logging.basicConfig(format=FORMAT, level=logging.INFO)
 logger = logging.getLogger('update_db')
 
+
 def fetch_workshop_pages(itemIds: List[str]) -> Dict[str, Dict[str, Any]]:
     url = ('https://api.steampowered.com/ISteamRemoteStorage/'
            'GetPublishedFileDetails/v1/?format=json')
@@ -99,7 +100,7 @@ def check_mod_update(mod_id: str, workshop_timestamp: int,
         if download_new:
             logger.info(
                 f"Mod {mod_id} was not found locally, assuming that "
-                 "it needs an update.")
+                "it needs an update.")
             return True
         else:
             logger.info(f"Mod {mod_id} was not found locally, skipping")
@@ -244,7 +245,7 @@ def main():
 
                 webhook = DiscordWebhook(url=webhook_url,
                                          content=message_text)
-                response = webhook.execute()
+                webhook.execute()
 
                 last_mailed = updated_mod_ids
 
