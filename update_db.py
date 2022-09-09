@@ -83,8 +83,11 @@ def get_local_state(ws_path: Union[Path, str]) -> Dict[str, int]:
     workshop = Path(os.path.expanduser(ws_path))
     workshop_path = (workshop / 'steamapps/workshop' / FILENAME)
 
-    with open(workshop_path) as f:
-        data = acf.load(f)['AppWorkshop']['WorkshopItemsInstalled']
+    try:
+        with open(workshop_path) as f:
+            data = acf.load(f)['AppWorkshop']['WorkshopItemsInstalled']
+    except FileNotFoundError:
+        data = {}
     local_mods = {}
 
     for mod in data:
