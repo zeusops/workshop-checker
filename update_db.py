@@ -253,7 +253,7 @@ def main():
                 last_mailed = updated_mod_ids
 
         logger.info("Bye!")
-        exit_code = 0 if updated_mod_count == 0 else 1
+        exit_code = 0 if updated_mod_count == 0 else 4
     else:
         logger.info("Not checking for updates")
         exit_code = 0
