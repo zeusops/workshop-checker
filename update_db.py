@@ -109,6 +109,8 @@ def check_mod_update(mod_id: str, workshop_timestamp: int,
             logger.info(f"Mod {mod_id} was not found locally, skipping")
             return False
     else:
+        logger.log(5, f"ID: {mod_id}, local: {local_timestamp}, "
+                      f"workshop: {workshop_timestamp}")
         if local_timestamp < workshop_timestamp:
             logger.debug(f"ID: {mod_id}, local: {local_timestamp}, "
                          f"workshop: {workshop_timestamp}")
@@ -176,8 +178,9 @@ def main():
     parser.add_argument('-e', dest='only_existing', default=False,
                         action='store_true', help="Only update existing mods, "
                         "do not download new ones.")
-    parser.add_argument('-v', dest='verbose', default=False,
-                        action='store_true', help="Enable verbose output")
+    parser.add_argument('-v', '--verbose', default=0, action='count',
+                        help=("Enable verbose output. Repeat flag to increase "
+                              "verbosity"))
     parser.add_argument('mod_ids', nargs='+', help="Mod IDs to check")
     args = parser.parse_args()
 
@@ -185,8 +188,10 @@ def main():
     logger.info(
         f"Welcome, we will try to fetch update info for {len(modIds)} mods")
 
-    if args.verbose:
+    if args.verbose == 1:
         logger.setLevel(logging.DEBUG)
+    elif args.verbose == 2:
+        logger.setLevel(5)
 
     # For debugging: a static list of IDs
     # modIds = {"820924072", "1181881736"}
@@ -205,6 +210,7 @@ def main():
     except FileNotFoundError:
         data = {}
     logger.info("Update info fetched")
+    logger.debug(f"data: {data}")
 
     last_mailed: List[str] = data.get("last_mailed", {})
 
