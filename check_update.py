@@ -7,10 +7,15 @@
 
 import argparse
 import json
+import logging
 import sys
 
 from config import FILENAME, WORKSHOP_PATH
 from update_db import check_mod_update, get_local_state
+
+FORMAT = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+logging.basicConfig(format=FORMAT, level=logging.INFO)
+logger = logging.getLogger('check_update')
 
 parser = argparse.ArgumentParser()
 parser.add_argument('-w', dest='workshop_path', default=WORKSHOP_PATH,
@@ -46,13 +51,13 @@ mod_id = args.mod_id
 try:
     workshop_time = workshop_state[mod_id]['timestamp']
 except KeyError:
-    print(f"Could not find mod \"{mod_id}\" in the state file.")
+    logger.error(f"Could not find mod \"{mod_id}\" in the state file.")
     sys.exit(0)
 
 # 2. Check if the mod needs an update
 if check_mod_update(mod_id, workshop_time, local_mods, not args.only_existing):
-    print('NEEDS UPDATE')
+    logger.info('NEEDS UPDATE')
     sys.exit(1)
 else:
-    print('UNCHANGED')
+    logger.info('UNCHANGED')
     sys.exit(0)
