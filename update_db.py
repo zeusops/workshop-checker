@@ -140,6 +140,7 @@ def send_mail(message_text: str, recipients: list,
     context = ssl.create_default_context()
 
     # Try to log in to server and send email
+    server = None
     try:
         server = smtplib.SMTP(hostname, port)
         server.ehlo()  # Can be omitted
@@ -157,7 +158,8 @@ def send_mail(message_text: str, recipients: list,
                      else recipients[0])
         server.send_message(msg)
     finally:
-        server.quit()
+        if server:
+            server.quit()
 
 
 def main():
@@ -170,12 +172,18 @@ def main():
                         help="Filename of the state file to use. Will be "
                              "created if does not exist.",
                         default="versions_local_state.json")
-    parser.add_argument('-m', dest='send_mail', default=False,
+    parser.add_argument('--notify', dest='notify', default=False,
                         action='store_true',
-                        help="Send mail to admins about mod updates")
-    parser.add_argument('-c', dest='check_updates', default=False,
+                        help="Notify admins about mod updates (by email, Discord)")
+    parser.add_argument('--no-mail', dest='send_mail', default=True,
+                        action='store_false',
+                        help="Do not send mail to admins about mod updates")
+    parser.add_argument('--no-discord', dest='notify_discord', default=True,
+                        action='store_false',
+                        help="Do not send Discord messages to admins about mod updates")
+    parser.add_argument('-c', '--check-updates', dest='check_updates', default=False,
                         action='store_true', help="Check for mod updates")
-    parser.add_argument('-e', dest='only_existing', default=False,
+    parser.add_argument('-e', '--only-existing', dest='only_existing', default=False,
                         action='store_true', help="Only update existing mods, "
                         "do not download new ones.")
     parser.add_argument('-v', '--verbose', default=0, action='count',
@@ -212,7 +220,8 @@ def main():
     logger.info("Update info fetched")
     logger.debug(f"data: {data}")
 
-    last_mailed: List[str] = data.get("last_mailed", {})
+    last_mailed: List[str] = data.get("last_mailed", [])
+    last_discord: List[str] = data.get("last_discord", [])
 
     if args.check_updates:
         # 2. Check our DB to see if any have updated
@@ -230,33 +239,33 @@ def main():
             mods_combined.append(combined)
 
         # 4. Send a mail to peeps
-        if updated_mod_count > 0 and args.send_mail:
+        if updated_mod_count > 0 and args.notify:
             # Check if a mail has already been sent about the same mod IDs
             needs_mail = any(elem not in last_mailed
                              for elem in updated_mod_ids)
-            if needs_mail:
+            needs_discord = any(elem not in last_discord
+                                for elem in updated_mod_ids)
+            if needs_mail or needs_discord:
                 message_text = (
-                    "Yo, at least {0} mod{1} need{2} an update!\n"
-                    "\n"
-                    "ID{1}:\n"
+                    "Yo, at least {0} mod{1} need{2} an update:\n"
                     "  {3}\n"
-                    "\n"
-                    "Cheers,\n"
-                    "    UpdateBot.\n"
                     .format(updated_mod_count,
                             's' if updated_mod_count != 1 else '',
                             's' if updated_mod_count == 1 else '',
                             '\n  '.join(mods_combined)))
-                from secret import mail_recipient
-                send_mail(message_text, mail_recipient)
-                from secret import webhook_url
-                from discord_webhook import DiscordWebhook
+                if args.send_mail:
+                    from secret import mail_recipient
+                    send_mail(message_text, mail_recipient)
+                    last_mailed = updated_mod_ids
+                if args.notify_discord:
+                    from secret import webhook_url
+                    from discord_webhook import DiscordWebhook
 
-                webhook = DiscordWebhook(url=webhook_url,
-                                         content=message_text)
-                webhook.execute()
+                    webhook = DiscordWebhook(url=webhook_url,
+                                             content=message_text)
+                    webhook.execute()
+                    last_discord = updated_mod_ids
 
-                last_mailed = updated_mod_ids
 
         logger.info("Bye!")
         exit_code = 0 if updated_mod_count == 0 else 4
@@ -268,6 +277,7 @@ def main():
         data_out = {
             "mods_info": mods_info,
             "last_mailed": last_mailed,
+            "last_discord": last_discord,
         }
         json.dump(data_out, f, indent=2)
 
