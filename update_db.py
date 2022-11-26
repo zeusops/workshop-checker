@@ -22,9 +22,24 @@ from steamfiles import acf
 
 from config import WORKSHOP_PATH, FILENAME
 
+
+# Log debug, info -> stdout, warn, error -> stderr
 FORMAT = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-logging.basicConfig(format=FORMAT, level=logging.INFO)
+fmt = logging.Formatter(FORMAT)
+
 logger = logging.getLogger('update_db')
+logger.setLevel(logging.INFO)
+
+h1 = logging.StreamHandler(sys.stdout)
+h1.setLevel(logging.DEBUG)
+h1.addFilter(lambda record: record.levelno <= logging.INFO)
+h1.setFormatter(fmt)
+logger.addHandler(h1)
+
+h2 = logging.StreamHandler()
+h2.setLevel(logging.WARNING)
+h2.setFormatter(fmt)
+logger.addHandler(h2)
 
 
 def fetch_workshop_pages(itemIds: List[str]) -> Dict[str, Dict[str, Any]]:
