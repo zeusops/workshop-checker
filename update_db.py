@@ -268,11 +268,11 @@ def main():
                             's' if updated_mod_count != 1 else '',
                             's' if updated_mod_count == 1 else '',
                             '\n  '.join(mods_combined)))
-                if args.send_mail:
+                if args.send_mail and needs_mail:
                     from secret import mail_recipient
                     send_mail(message_text, mail_recipient)
                     last_mailed = updated_mod_ids
-                if args.notify_discord:
+                if args.notify_discord and needs_discord:
                     from secret import webhook_url
                     from discord_webhook import DiscordWebhook
 
