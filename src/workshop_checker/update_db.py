@@ -20,7 +20,7 @@ from urllib import parse, request
 
 from steamfiles import acf
 
-from config import WORKSHOP_PATH, FILENAME
+from workshop_checker.config import WORKSHOP_PATH, FILENAME
 
 
 # Log debug, info -> stdout, warn, error -> stderr
@@ -149,7 +149,7 @@ def send_mail(message_text: str, recipients: list,
               subject="Zeusops Pending Mod Updates"):
     hostname = 'smtp.zeusops.com'
     port = 587  # For starttls
-    from secret import password, sender_mail
+    from workshop_checker.secret import password, sender_mail
 
     # Create a secure SSL context
     context = ssl.create_default_context()
@@ -269,11 +269,11 @@ def main():
                             's' if updated_mod_count == 1 else '',
                             '\n  '.join(mods_combined)))
                 if args.send_mail and needs_mail:
-                    from secret import mail_recipient
+                    from workshop_checker.secret import mail_recipient
                     send_mail(message_text, mail_recipient)
                     last_mailed = updated_mod_ids
                 if args.notify_discord and needs_discord:
-                    from secret import webhook_url
+                    from workshop_checker.secret import webhook_url
                     from discord_webhook import DiscordWebhook
 
                     webhook = DiscordWebhook(url=webhook_url,

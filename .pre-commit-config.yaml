@@ -49,7 +49,7 @@ repos:
     # flake8 refuses to use pyproject.toml, needs a separate config.
     # See https://github.com/PyCQA/flake8/issues/234
     args: [
-      "--config=.flake8",
+      "--config=.github/linters/.flake8",
       "--output-file",
       "test_results/flake8.txt",
       "--tee",
@@ -74,9 +74,9 @@ repos:
   rev: v0.32.2
   hooks:
   - id: markdownlint
-    args: ["--config", ".markdown-lint.yml"]
+    args: ["--config", ".github/linters/.markdown-lint.yml"]
 - repo: https://github.com/adrienverge/yamllint.git
   rev: v1.17.0
   hooks:
   - id: yamllint
-    args: ["-c", ".yamllint"]
+    args: ["-c", ".github/linters/.yaml-lint.yml"]

@@ -10,8 +10,8 @@ import json
 import logging
 import sys
 
-from config import FILENAME, WORKSHOP_PATH
-from update_db import check_mod_update, get_local_state
+from workshop_checker.config import FILENAME, WORKSHOP_PATH
+from workshop_checker.update_db import check_mod_update, get_local_state
 
 FORMAT = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 logging.basicConfig(format=FORMAT, level=logging.INFO)
