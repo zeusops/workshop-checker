@@ -1,0 +1,28 @@
+{
+  "template": "https://github.com/Gehock/python-template",
+  "commit": "f2f106b561a47d96fa0f17203f1414c546556e63",
+  "checkout": "main",
+  "context": {
+    "cookiecutter":
+      {
+        "_extensions": [
+          "jinja2_git.GitExtension"
+        ],
+        "_jinja2_env_vars": {
+          "trim_blocks": true
+        },
+        "_output_dir": "/home/sami/git",
+        "_template": "python-template",
+        "author_email": "sami.v.laine@gmail.com",
+        "author_name": "Sami Laine",
+        "description": "Arma Workshop mod update checker for Zeusops",
+        "package_name": "workshop_checker",
+        "project_name": "Workshop Checker",
+        "project_slug": "workshop-checker",
+        "project_variant": "just_a_CLI",
+        "python_version": "3.10",
+        "template_url": "https://github.com/Gehock/python-template"
+      }
+    },
+  "directory": null
+}
