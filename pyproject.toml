@@ -4,12 +4,15 @@ version = "0.1.0"
 description = "Arma Workshop mod update checker for Zeusops"
 authors = ["Sami Laine <sami.v.laine@gmail.com>"]
 readme = "README.md"
+license = "GPL-3.0-or-later"
 
 [tool.poetry.scripts]
 workshop-checker = "workshop_checker.cli:cli"
 
 [tool.poetry.dependencies]
 python = "^3.10"
+steamfiles = { git = "https://github.com/WinterPhoenix/steamfiles", branch = "patch-1" }
+discord-webhook = "*"
 
 
 # Note: Linters not defined in this file but .pre-commit-config.yaml, which
