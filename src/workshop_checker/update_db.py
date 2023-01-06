@@ -195,8 +195,13 @@ def send_mail(
             server.quit()
 
 
-def main(argv: list[str] | None = None):
-    parser = argparse.ArgumentParser()
+def parse_arguments(argv):
+    parser = argparse.ArgumentParser(
+        description=(
+            "Check for updates of mods in the steam workshop and cache the "
+            "status locally."
+        )
+    )
     parser.add_argument(
         "-w",
         dest="workshop_path",
@@ -261,9 +266,19 @@ def main(argv: list[str] | None = None):
         help=("Enable verbose output. Repeat flag to increase verbosity"),
     )
     parser.add_argument("mod_ids", nargs="+", help="Mod IDs to check")
+    args = parser.parse_args(argv)
+    return args
+
+
+def cli(argv: list[str] | None = None):
+    """Implement the command line interface.
+
+    This functions as the entrypoint when running the `update-db` command
+    from the command line.
+    """
     if not argv:
         argv = sys.argv[1:]
-    args = parser.parse_args(argv)
+    args = parse_arguments(argv)
 
     modIds = args.mod_ids
     logger.info(
@@ -284,7 +299,7 @@ def main(argv: list[str] | None = None):
     except ValueError:
         traceback.print_exc()
         logger.warning("An internal error occurred")
-        sys.exit(3)
+        return 3
 
     try:
         with open(args.state_path, "r") as f:
@@ -362,8 +377,16 @@ def main(argv: list[str] | None = None):
         }
         json.dump(data_out, f, indent=2)
 
-    sys.exit(exit_code)
+    return exit_code
+
+
+def main(mod_ids: list[str], *args):
+    """Run the main function.
+
+    This functions as the entrypoint when importing the module.
+    """
+    return cli([*mod_ids, *args])
 
 
 if __name__ == "__main__":
-    main()
+    sys.exit(cli())

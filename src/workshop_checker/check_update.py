@@ -18,8 +18,10 @@ logging.basicConfig(format=FORMAT, level=logging.INFO)
 logger = logging.getLogger("check_update")
 
 
-def main(argv: list[str] | None = None):
-    parser = argparse.ArgumentParser()
+def parse_arguments(argv):
+    parser = argparse.ArgumentParser(
+        description="Check the update status of a mod using the local cache",
+    )
     parser.add_argument(
         "-w",
         dest="workshop_path",
@@ -46,9 +48,14 @@ def main(argv: list[str] | None = None):
         help="Only update existing mods, do not download new ones.",
     )
     parser.add_argument("mod_id", help="Mod ID to check")
+    args = parser.parse_args(argv)
+    return args
+
+
+def cli(argv: list[str] | None = None):
     if not argv:
         argv = sys.argv[1:]
-    args = parser.parse_args(argv)
+    args = parse_arguments(argv)
 
     # 1. Read the state file
     try:
@@ -66,18 +73,26 @@ def main(argv: list[str] | None = None):
         workshop_time = workshop_state[mod_id]["timestamp"]
     except KeyError:
         logger.error(f'Could not find mod "{mod_id}" in the state file.')
-        sys.exit(0)
+        return 0
 
     # 2. Check if the mod needs an update
     if check_mod_update(
         mod_id, workshop_time, local_mods, not args.only_existing
     ):
         logger.info("NEEDS UPDATE")
-        sys.exit(1)
+        return 1
     else:
         logger.info("UNCHANGED")
-        sys.exit(0)
+        return 0
+
+
+def main(mod_id: str, *args):
+    """Run the main function.
+
+    This functions as the entrypoint when importing the module.
+    """
+    return cli([mod_id, *args])
 
 
 if __name__ == "__main__":
-    main()
+    sys.exit(cli())

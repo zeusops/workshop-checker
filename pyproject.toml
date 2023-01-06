@@ -8,6 +8,8 @@ license = "GPL-3.0-or-later"
 
 [tool.poetry.scripts]
 workshop-checker = "workshop_checker.cli:cli"
+update-db = "workshop_checker.update_db:cli"
+check-update = "workshop_checker.check_update:cli"
 
 [tool.poetry.dependencies]
 python = "^3.10"
