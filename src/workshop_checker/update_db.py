@@ -195,7 +195,7 @@ def send_mail(
             server.quit()
 
 
-def main():
+def main(argv: list[str] | None = None):
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "-w",
@@ -261,7 +261,9 @@ def main():
         help=("Enable verbose output. Repeat flag to increase verbosity"),
     )
     parser.add_argument("mod_ids", nargs="+", help="Mod IDs to check")
-    args = parser.parse_args()
+    if not argv:
+        argv = sys.argv[1:]
+    args = parser.parse_args(argv)
 
     modIds = args.mod_ids
     logger.info(

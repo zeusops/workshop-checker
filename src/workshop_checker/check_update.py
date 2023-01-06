@@ -18,7 +18,7 @@ logging.basicConfig(format=FORMAT, level=logging.INFO)
 logger = logging.getLogger("check_update")
 
 
-def main(argv: list[str]):
+def main(argv: list[str] | None = None):
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "-w",
@@ -46,6 +46,8 @@ def main(argv: list[str]):
         help="Only update existing mods, do not download new ones.",
     )
     parser.add_argument("mod_id", help="Mod ID to check")
+    if not argv:
+        argv = sys.argv[1:]
     args = parser.parse_args(argv)
 
     # 1. Read the state file
@@ -78,4 +80,4 @@ def main(argv: list[str]):
 
 
 if __name__ == "__main__":
-    main(sys.argv[1:])
+    main()
