@@ -6,6 +6,7 @@
 # Returns 0 for no updates, 1 for updates and > 1 for errors.
 
 import argparse
+import datetime
 import json
 import logging
 import os
@@ -305,6 +306,17 @@ def cli(argv: list[str] | None = None):
         with open(args.state_path, "r") as f:
             data = json.load(f)
     except FileNotFoundError:
+        data = {}
+    except json.JSONDecodeError:
+        datestr = datetime.datetime.now(datetime.timezone.utc).isoformat(
+            timespec="seconds"
+        )
+        filename = f"{args.state_path}-{datestr}"
+        os.rename(args.state_path, filename)
+        logger.warning(
+            f"Could not load database, backing up to {filename} and "
+            "recreating"
+        )
         data = {}
     logger.info("Update info fetched")
     logger.debug(f"data: {data}")
