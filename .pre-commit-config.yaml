@@ -69,7 +69,7 @@ repos:
   - id: mypy
     name: Mypy (Python type-checker)
     # Uncomment below if mypy requires extra type stub packages
-    # additional_dependencies: [types-PyYAML==6.0.12.2]
+    additional_dependencies: [types-PyYAML==6.0.12.3]
 - repo: https://github.com/igorshubovych/markdownlint-cli
   rev: v0.32.2
   hooks:
